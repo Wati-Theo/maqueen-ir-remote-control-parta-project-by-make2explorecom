@@ -1,47 +1,42 @@
 IR.IR_init()
 let instructionSequence: string[] = []
-let prevIrData = -1
 let isExecutingSequence = false
+let lastIrTime = 0
+let debounceDelay = 50 // Délai en nombre d'itérations entre les lectures IR
+
+let currentTime = 0
 
 basic.forever(function () {
+    currentTime += 1
     if (!isExecutingSequence) {
         let irData = IR.IR_read()
-        if (irData == -1) {
-            prevIrData = -1 // Réinitialiser prevIrData si aucune donnée IR n'est lue
-        } else if (irData != prevIrData) {
-            prevIrData = irData
+        if (irData != -1 && (currentTime - lastIrTime) > debounceDelay) {
+            lastIrTime = currentTime
             if (irData == 249) {
                 basic.showArrow(ArrowNames.North)
                 instructionSequence.push("forward")
-                basic.pause(500)
-                basic.clearScreen()
             } else if (irData == 89) {
                 basic.showArrow(ArrowNames.West)
                 instructionSequence.push("left")
-                basic.pause(500)
-                basic.clearScreen()
             } else if (irData == 185) {
                 basic.showArrow(ArrowNames.East)
                 instructionSequence.push("right")
-                basic.pause(500)
-                basic.clearScreen()
             } else if (irData == 121) {
                 basic.showArrow(ArrowNames.South)
                 instructionSequence.push("backward")
-                basic.pause(500)
-                basic.clearScreen()
             } else if (irData == 233) {
                 // Commencer l'exécution de la séquence
                 isExecutingSequence = true
                 executeSequence()
             }
+            basic.pause(500)
+            basic.clearScreen()
         }
     }
 })
 
 function executeSequence() {
-    for (let i = 0; i < instructionSequence.length; i++) {
-        let instruction = instructionSequence[i]
+    for (let instruction of instructionSequence) {
         if (instruction == "forward") {
             basic.showArrow(ArrowNames.North)
             Maqueen_V5.motorRun(Maqueen_V5.Motors.All, Maqueen_V5.Dir.CW, 50)
@@ -66,6 +61,6 @@ function executeSequence() {
         basic.clearScreen()
     }
     instructionSequence = [] // Réinitialiser la séquence après exécution
-    isExecutingSequence = false // Permettre à la boucle principale de reprendre la lecture des données IR
-    prevIrData = -1 // Réinitialiser prevIrData pour détecter de nouvelles entrées
+    isExecutingSequence = false // Permettre au système de recevoir de nouvelles instructions
+    lastIrTime = 0 // Réinitialiser le temps pour permettre de nouvelles entrées
 }
